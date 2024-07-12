@@ -90,3 +90,103 @@ label {
   right: 0px;
 }
 
+span{
+  font-size: xx-small;
+}
+span.left-hand::before {
+  content: "";
+  display: block;
+  background: black;
+  width: 50%;
+  height: 2px;
+  position: absolute;
+  top: 50%;
+  left: 0;
+  transform: translate(0%, -50%);
+}
+span.right-hand::before {
+  content: "";
+  display: block;
+  background: black;
+  width: 50%;
+  height: 2px;
+  position: absolute;
+  top: 50%;
+  right: 0;
+  transform: translate(0%, -50%);
+}
+span.top-hand::before {
+  content: "";
+  display: block;
+  background: black;
+  width: 2px;
+  height: 50%;
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translate(-50%, 0%);
+}
+span.bottom-hand::before {
+  content: "";
+  display: block;
+  background: black;
+  width: 2px;
+  height: 50%;
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translate(-50%, 0%);
+}
+
+span.to-right::after {
+  content: "";
+  display: block;
+  background: black;
+  width: 50%;
+  height: 2px;
+  position: absolute;
+  top: 50%;
+  left: 0;
+  transform: translate(0%, -50%);
+}
+span.to-left::after {
+  content: "";
+  display: block;
+  background: black;
+  width: 50%;
+  height: 2px;
+  position: absolute;
+  top: 50%;
+  right: 0;
+  transform: translate(0%, -50%);
+}
+span.to-top::after {
+  content: "";
+  display: block;
+  background: black;
+  width: 2px;
+  height: 50%;
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translate(-50%, 0%);
+}
+span.to-bottom::after {
+  content: "";
+  display: block;
+  background: black;
+  width: 2px;
+  height: 50%;
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translate(-50%, 0%);
+}
+
+
+#controls2{
+  position: absolute;
+  top: 50%;
+  left: 100px;
+  transform: translate(-50%, -50%);
+}

@@ -39,7 +39,7 @@ label {
 }
 
 .cell.player {
-  background-color: blue;
+  background: radial-gradient(circle at center, black 0.25rem, transparent 0);
 }
 
 .cell.solution {
@@ -90,10 +90,10 @@ label {
   right: 0px;
 }
 
-span{
+span {
   font-size: xx-small;
 }
-span.left-hand::before {
+span.right-hand::before {
   content: "";
   display: block;
   background: black;
@@ -104,7 +104,7 @@ span.left-hand::before {
   left: 0;
   transform: translate(0%, -50%);
 }
-span.right-hand::before {
+span.left-hand::before {
   content: "";
   display: block;
   background: black;
@@ -115,7 +115,7 @@ span.right-hand::before {
   right: 0;
   transform: translate(0%, -50%);
 }
-span.top-hand::before {
+span.bottom-hand::before {
   content: "";
   display: block;
   background: black;
@@ -126,7 +126,7 @@ span.top-hand::before {
   left: 50%;
   transform: translate(-50%, 0%);
 }
-span.bottom-hand::before {
+span.top-hand::before {
   content: "";
   display: block;
   background: black;
@@ -138,7 +138,7 @@ span.bottom-hand::before {
   transform: translate(-50%, 0%);
 }
 
-span.to-right::after {
+span.to-left::after {
   content: "";
   display: block;
   background: black;
@@ -149,7 +149,7 @@ span.to-right::after {
   left: 0;
   transform: translate(0%, -50%);
 }
-span.to-left::after {
+span.to-right::after {
   content: "";
   display: block;
   background: black;
@@ -183,8 +183,7 @@ span.to-bottom::after {
   transform: translate(-50%, 0%);
 }
 
-
-#controls2{
+#controls2 {
   position: absolute;
   top: 50%;
   left: 100px;

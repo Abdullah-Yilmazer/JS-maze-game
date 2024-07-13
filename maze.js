@@ -2,25 +2,29 @@ let mazeContainer = document.getElementById("maze-container");
 let sizeInput = document.getElementById("size");
 let generateButton = document.getElementById("generate");
 let solveButton = document.getElementById("solve");
-let binaryButton = document.getElementById("binary-visibility");
 
 let size = parseInt(sizeInput.value);
 let maze = generateMaze(size);
 let playerPosition = { x: 0, y: 0 };
-renderMaze(maze);
+let previousPosition = { x: 0, y: 0 };
+let visited = {};
+let previousPositions = [];
+let PlayerCanMove = true;
 
-binaryButton.addEventListener("click", (e) => {
-  renderMaze(maze);
-});
+renderMaze(maze);
 
 generateButton.addEventListener("click", () => {
   size = parseInt(sizeInput.value);
   maze = generateMaze(size);
   playerPosition = { x: 0, y: 0 };
+  visited = {};
+  PlayerCanMove = true;
+
   renderMaze(maze);
 });
 
 solveButton.addEventListener("click", () => {
+  PlayerCanMove = false;
   const solution = solveMaze(maze, size);
   animateSolution(solution);
 });
@@ -30,44 +34,48 @@ document.addEventListener("keydown", movePlayer);
 function generateMaze(size) {
   const maze = Array.from({ length: size }, () => Array(size).fill(15)); // 15: all walls (1111 in binary)
   const visited = Array.from({ length: size }, () => Array(size).fill(false));
-  const stack = [{ x: 0, y: 0 }];
-  visited[0][0] = true;
+  const walls = [];
 
-  while (stack.length) {
-    const { x, y } = stack[stack.length - 1];
-    const directions = shuffle([
-      { x: x - 1, y: y, direction: "left" },
-      { x: x + 1, y: y, direction: "right" },
-      { x: x, y: y - 1, direction: "up" },
-      { x: x, y: y + 1, direction: "down" },
-    ]);
+  function addWalls(x, y) {
+    if (x > 0 && !visited[y][x - 1]) walls.push({ x, y, direction: "left" });
+    if (x < size - 1 && !visited[y][x + 1]) walls.push({ x, y, direction: "right" });
+    if (y > 0 && !visited[y - 1][x]) walls.push({ x, y, direction: "up" });
+    if (y < size - 1 && !visited[y + 1][x]) walls.push({ x, y, direction: "down" });
+  }
 
-    let moved = false;
-    for (const { x: nx, y: ny, direction } of directions) {
-      if (nx >= 0 && ny >= 0 && nx < size && ny < size && !visited[ny][nx]) {
-        visited[ny][nx] = true;
-        stack.push({ x: nx, y: ny });
-        moved = true;
+  let x = Math.floor(Math.random() * size);
+  let y = Math.floor(Math.random() * size);
+  visited[y][x] = true;
+  addWalls(x, y);
 
-        // Remove walls
-        if (direction === "left") {
-          maze[y][x] &= ~1; // Remove left wall of current cell
-          maze[ny][nx] &= ~4; // Remove right wall of next cell
-        } else if (direction === "right") {
-          maze[y][x] &= ~4; // Remove right wall of current cell
-          maze[ny][nx] &= ~1; // Remove left wall of next cell
-        } else if (direction === "up") {
-          maze[y][x] &= ~2; // Remove top wall of current cell
-          maze[ny][nx] &= ~8; // Remove bottom wall of next cell
-        } else if (direction === "down") {
-          maze[y][x] &= ~8; // Remove bottom wall of current cell
-          maze[ny][nx] &= ~2; // Remove top wall of next cell
-        }
-        break;
+  while (walls.length > 0) {
+    const { x, y, direction } = walls.splice(Math.floor(Math.random() * walls.length), 1)[0];
+
+    let nx = x,
+      ny = y;
+    if (direction === "left") nx--;
+    if (direction === "right") nx++;
+    if (direction === "up") ny--;
+    if (direction === "down") ny++;
+
+    if (nx >= 0 && ny >= 0 && nx < size && ny < size && !visited[ny][nx]) {
+      visited[ny][nx] = true;
+
+      if (direction === "left") {
+        maze[y][x] &= ~1;
+        maze[ny][nx] &= ~4;
+      } else if (direction === "right") {
+        maze[y][x] &= ~4;
+        maze[ny][nx] &= ~1;
+      } else if (direction === "up") {
+        maze[y][x] &= ~2;
+        maze[ny][nx] &= ~8;
+      } else if (direction === "down") {
+        maze[y][x] &= ~8;
+        maze[ny][nx] &= ~2;
       }
-    }
-    if (!moved) {
-      stack.pop();
+
+      addWalls(nx, ny);
     }
   }
 
@@ -83,85 +91,56 @@ function shuffle(array) {
 }
 
 function renderMaze(maze, solution = []) {
+  mazeContainer.style.gridTemplateColumns = `repeat(${size}, var(--cell-size))`;
+  mazeContainer.style.gridTemplateRows = `repeat(${size}, var(--cell-size))`;
   mazeContainer.innerHTML = "";
-  mazeContainer.style.gridTemplateColumns = `repeat(${size}, 20px)`;
-  mazeContainer.style.gridTemplateRows = `repeat(${size}, 20px)`;
 
-  maze.forEach((row, y) => {
-    row.forEach((cell, x) => {
-      const div = document.createElement("div");
-      div.classList.add("cell");
-      if (x === 0 && y === 0) div.classList.add("start");
-      if (x === size - 1 && y === size - 1) div.classList.add("end");
-      if (x === playerPosition.x && y === playerPosition.y) div.classList.add("player");
-      if (solution.some((pos) => pos.x === x && pos.y === y)) div.classList.add("solution");
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const cell = document.createElement("div");
+      cell.className = "cell";
+      cell.dataset.x = x;
+      cell.dataset.y = y;
+      if (x === 0 && y === 0) cell.classList.add("start");
+      if (x === size - 1 && y === size - 1) cell.classList.add("end");
+      if (solution.some((pos) => pos.x === x && pos.y === y)) {
+        cell.classList.add("solution");
+      }
 
-      if (cell & 1) div.classList.add("left");
-      if (cell & 2) div.classList.add("top");
-      if (cell & 4) div.classList.add("right");
-      if (cell & 8) div.classList.add("bottom");
-      let span = document.createElement("span");
-      if (binaryButton.checked) span.innerHTML = (cell >>> 0).toString(2);
-      div.appendChild(span);
-      mazeContainer.appendChild(div);
-    });
-  });
+      addWalls(cell, maze[y][x]);
+      mazeContainer.appendChild(cell);
+    }
+  }
+
+  const playerCell = document.querySelector(`.cell[data-x="${playerPosition.x}"][data-y="${playerPosition.y}"]`);
+  playerCell.classList.add("player");
 }
 
-function movePlayer(event) {
-  const key = event.key;
-  const { x, y } = playerPosition;
-
-  let newX = x,
-    newY = y,
-    beforeClass = "",
-    afterClass = "";
-
-  if ((key === "ArrowUp" || key === "w") && y > 0 && !(maze[y][x] & 2)) {
-    newY--;
-    beforeClass = "to-top";
-    afterClass = "bottom-hand";
-  } else if ((key === "ArrowDown" || key === "s") && y < size - 1 && !(maze[y][x] & 8)) {
-    newY++;
-    beforeClass = "to-bottom";
-    afterClass = "top-hand";
-  } else if ((key === "ArrowLeft" || key === "a") && x > 0 && !(maze[y][x] & 1)) {
-    newX--;
-    beforeClass = "to-left";
-    afterClass = "right-hand";
-  } else if ((key === "ArrowRight" || key === "d") && x < size - 1 && !(maze[y][x] & 4)) {
-    newX++;
-    beforeClass = "to-right";
-    afterClass = "left-hand";
-  }
-
-  if (newX !== x || newY !== y) {
-    // console.log(maze[playerPosition.y][playerPosition.x]);
-    playerPosition = { x: newX, y: newY };
-    renderMaze(maze);
-  }
-
-  if (playerPosition.x === size - 1 && playerPosition.y === size - 1) {
-    alert("Tebrikler! Labirenti çözdünüz.");
-  }
+function addWalls(cell, value) {
+  if (value & 1) cell.classList.add("left");
+  if (value & 2) cell.classList.add("top");
+  if (value & 4) cell.classList.add("right");
+  if (value & 8) cell.classList.add("bottom");
 }
 
 function solveMaze(maze, size) {
   const directions = [
-    { x: 0, y: -1 }, // up
-    { x: 1, y: 0 }, // right
-    { x: 0, y: 1 }, // down
-    { x: -1, y: 0 }, // left
+    { x: 1, y: 0 },
+    { x: -1, y: 0 },
+    { x: 0, y: 1 },
+    { x: 0, y: -1 },
   ];
-
-  const stack = [{ x: 0, y: 0, path: [{ x: 0, y: 0 }] }];
+  const start = { x: 0, y: 0 };
+  const end = { x: size - 1, y: size - 1 };
+  const queue = [[start]];
   const visited = Array.from({ length: size }, () => Array(size).fill(false));
   visited[0][0] = true;
 
-  while (stack.length) {
-    const { x, y, path } = stack.pop();
+  while (queue.length) {
+    const path = queue.shift();
+    const { x, y } = path[path.length - 1];
 
-    if (x === size - 1 && y === size - 1) {
+    if (x === end.x && y === end.y) {
       return path;
     }
 
@@ -169,36 +148,119 @@ function solveMaze(maze, size) {
       const nx = x + dx;
       const ny = y + dy;
 
-      if (nx >= 0 && ny >= 0 && nx < size && ny < size && !visited[ny][nx]) {
-        const currentCell = maze[y][x];
-        const nextCell = maze[ny][nx];
-
-        if (
-          (dx === -1 && !(currentCell & 1) && !(nextCell & 4)) ||
-          (dx === 1 && !(currentCell & 4) && !(nextCell & 1)) ||
-          (dy === -1 && !(currentCell & 2) && !(nextCell & 8)) ||
-          (dy === 1 && !(currentCell & 8) && !(nextCell & 2))
-        ) {
-          visited[ny][nx] = true;
-          stack.push({ x: nx, y: ny, path: [...path, { x: nx, y: ny }] });
-        }
+      if (nx >= 0 && ny >= 0 && nx < size && ny < size && !visited[ny][nx] && canMove(maze[y][x], dx, dy)) {
+        visited[ny][nx] = true;
+        queue.push([...path, { x: nx, y: ny }]);
       }
     }
   }
-
   return [];
 }
 
+function canMove(cellValue, dx, dy) {
+  if (dx === 1 && !(cellValue & 4)) return true; // Move right
+  if (dx === -1 && !(cellValue & 1)) return true; // Move left
+  if (dy === 1 && !(cellValue & 8)) return true; // Move down
+  if (dy === -1 && !(cellValue & 2)) return true; // Move up
+  return false;
+}
+
 function animateSolution(solution) {
-  let i = 0;
-  function animateStep() {
-    if (i < solution.length) {
-      const { x, y } = solution[i];
-      const cell = mazeContainer.children[y * size + x];
-      cell.classList.add("solution");
-      i++;
-      setTimeout(animateStep, 20);
+  let index = 0;
+
+  const interval = setInterval(() => {
+    if (index >= solution.length) {
+      clearInterval(interval);
+      return;
+    }
+
+    const { x, y } = solution[index];
+    const cell = document.querySelector(`.cell[data-x="${x}"][data-y="${y}"]`);
+    cell.classList.add("solution");
+    index++;
+  }, 100);
+}
+
+function movePlayer(event) {
+  const directionMap = {
+    ArrowUp: { dx: 0, dy: -1 },
+    ArrowDown: { dx: 0, dy: 1 },
+    ArrowLeft: { dx: -1, dy: 0 },
+    ArrowRight: { dx: 1, dy: 0 },
+  };
+
+  if (PlayerCanMove) {
+    if (directionMap[event.key]) {
+      const { dx, dy } = directionMap[event.key];
+      const newX = playerPosition.x + dx;
+      const newY = playerPosition.y + dy;
+
+      if (newX >= 0 && newY >= 0 && newX < size && newY < size && canMove(maze[playerPosition.y][playerPosition.x], dx, dy)) {
+        previousPosition = { ...playerPosition };
+        playerPosition.x = newX;
+        playerPosition.y = newY;
+        updatePlayerPosition(dx, dy);
+      }
     }
   }
-  animateStep();
+}
+
+function updatePlayerPosition(dx, dy) {
+  const oldCell = document.querySelector(`.cell[data-x="${previousPosition.x}"][data-y="${previousPosition.y}"]`);
+  const newCell = document.querySelector(`.cell[data-x="${playerPosition.x}"][data-y="${playerPosition.y}"]`);
+
+  oldCell.classList.remove("player");
+  newCell.classList.add("player");
+
+  let oldSpan = oldCell.querySelector("span");
+  let newSpan = newCell.querySelector("span");
+
+  if (!oldSpan) {
+    oldSpan = document.createElement("span");
+    oldCell.appendChild(oldSpan);
+  }
+  if (!newSpan) {
+    newSpan = document.createElement("span");
+    newCell.appendChild(newSpan);
+  }
+
+  // Oyuncu geri giderse class güncelleme
+  if (
+    previousPositions.length > 0 &&
+    previousPositions[previousPositions.length - 1].x === playerPosition.x &&
+    previousPositions[previousPositions.length - 1].y === playerPosition.y
+  ) {
+    // Geri dönülen hücredeki span sınıflarını sil
+    previousPositions.pop();
+    if (oldSpan) {
+      oldSpan.className = "";
+    }
+
+    // Geri dönülen yeni hücredeki "to-*" sınıflarını sil ve "*-hand" sınıflarını koru
+    if (dx === 1) {
+      newSpan.classList.remove("to-left");
+    } else if (dx === -1) {
+      newSpan.classList.remove("to-right");
+    } else if (dy === 1) {
+      newSpan.classList.remove("to-top");
+    } else if (dy === -1) {
+      newSpan.classList.remove("to-bottom");
+    }
+  } else {
+    // Oyuncunun hareket yönüne göre sınıf ekleme
+    if (dx === 1) {
+      oldSpan.classList.add("to-right");
+      newSpan.classList.add("right-hand");
+    } else if (dx === -1) {
+      oldSpan.classList.add("to-left");
+      newSpan.classList.add("left-hand");
+    } else if (dy === 1) {
+      oldSpan.classList.add("to-bottom");
+      newSpan.classList.add("bottom-hand");
+    } else if (dy === -1) {
+      oldSpan.classList.add("to-top");
+      newSpan.classList.add("top-hand");
+    }
+    previousPositions.push({ ...previousPosition });
+  }
 }

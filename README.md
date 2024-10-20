@@ -8,6 +8,9 @@
 
 Bu proje, dinamik olarak bir labirent oluşturan, kullanıcıya bu labirentte gezinme imkanı tanıyan bir web uygulamasıdır.
 
+[ Demo](https://abdullah-yilmazer.github.io/JS-maze-game/)
+
+
 ## Algoritmalar ve Uygulamaları
 
 ### Labirent Oluşturma Algoritması
